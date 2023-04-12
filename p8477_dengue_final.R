@@ -28,7 +28,7 @@ SEIR_vector <- function(t, state, parameters) {
 
 
 NH = 1e4    # host population
-TLH = 600060 # host life span is 68.5 years or 600,060 hours or 25002.5 days
+TLH = 68.5*365*24 # host life span is 68.5 years or 600,060 hours or 25002.5 days
 TIIT = 5  # intrinsic incubation period is 5 days
 TEIT = 10   # extrinsic incubation period is 10 days
 MPP = 2    # Number of mosquitoes per person, MPP = 2 for simulation 1-3
@@ -48,16 +48,16 @@ TLV_dry = 3   # vector life span is 3 days in dry season
 
 # initial states (not directly from paper)
 
-IH = 0  # initial number of infections in humans
-EH = 1  # initial number of exposed in humans
-RH = 0 # ???
 SH = NH - EH - IH - RH
+EH = 0  # initial number of exposed in humans (0.5*SH)
+IH =  0 # initial number of infections in humans (0.25*EH)
+RH = 0 # ???
 
-IV = 1  # initial number of infections in mosquitoes
-EV = 1 # initial number of exposed in mosquitoes
-SV = e # same as emerging rate???
+SV = MPP*NH # ratio of mosquitoes to humans
+EV = 0. # initial number of exposed in mosquitoes (0.5*SV)
+IV = 0.029*EV # initial number of infectious in mosquitoes (0.029*EV)
 
-times = 1:(365) # ???
+times = 1:(24*365) # ???
   
 state = c(SH = SH, EH = EH, IH = IH, RH = RH,
           SV = SV, EV = EV, IV = IV)
@@ -68,12 +68,24 @@ param_dry = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
 
 sim_dry = ode(y=state,times=times,func=SEIR_vector,parms=param_dry)
 
-matplot(sim_dry[,'time'], sim_dry[,c('SH','IH')], type = 'l', xlim = c(0,365), lwd = 1, col = c('blue', 'red'),
+
+
+# example attempts to plot model below
+
+matplot(sim_dry[,'time'], sim_dry[,'IH'], type = 'l', xlim = c(0,365), lwd = 1, col = 'red',
+        lty = 1, main = 'Human Infections of Dengue', cex.main = 1, ylab = 'Prevalence of Dengue', xlab = 'Time')
+legend('topright',cex=1,seg.len = 1,
+       legend='IH',
+       lty=c(1,1),lwd=c(1,1),
+       col='red',bty='n')
+
+matplot(sim_dry[,'time'], sim_dry[,c('SH','EH', 'IH')], type = 'l', xlim = c(0,100), lwd = 1, col = c('green', 'blue', 'red'),
         lty = 1, main = 'Humans', cex.main = 1, ylab = 'Numbers', xlab = 'Time')
 legend('topright',cex=1,seg.len = 1,
-       legend=c('SH','IH'),
+       legend=c('SH', 'EH', 'IH'),
        lty=c(1,1),lwd=c(1,1),
-       col=c('blue','red'),bty='n')
+       col=c('green', 'blue','red'),bty='n')
+
 
 matplot(sim_dry[,'time'], sim_dry[,c('SV','IV')], type = 'l', xlim = c(0,365), lwd = 1, col = c('blue', 'red'),
         lty = 1, main = 'Mosquitoes', cex.main = 1, ylab = 'Numbers', xlab = 'Time')
@@ -81,3 +93,29 @@ legend('topright',cex=1,seg.len = 1,
        legend=c('SV','IV'),
        lty=c(1,1),lwd=c(1,1),
        col=c('blue','red'),bty='n')
+
+
+# wet season
+
+param_wet = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
+              IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV,
+              TLV = TLV_wet)
+
+sim_wet = ode(y=state,times=times,func=SEIR_vector,parms=param_wet)
+
+matplot(sim_wet[,'time'], sim_wet[,c('SH','EH', 'IH')], type = 'l', xlim = c(0,100), lwd = 1, col = c('green', 'blue', 'red'),
+        lty = 1, main = 'Humans', cex.main = 1, ylab = 'Numbers', xlab = 'Time')
+legend('topright',cex=1,seg.len = 1,
+       legend=c('SH','EH','IH'),
+       lty=c(1,1),lwd=c(1,1),
+       col=c('green','blue','red'),bty='n')
+
+matplot(sim_wet[,'time'], sim_wet[,c('SV','IV')], type = 'l', xlim = c(0,365), lwd = 1, col = c('blue', 'red'),
+        lty = 1, main = 'Mosquitoes', cex.main = 1, ylab = 'Numbers', xlab = 'Time')
+legend('topright',cex=1,seg.len = 1,
+       legend=c('SV','IV'),
+       lty=c(1,1),lwd=c(1,1),
+       col=c('blue','red'),bty='n')
+
+
+# need to simulate wet season for 5 months, then dry season for 7 months (rest of year)
