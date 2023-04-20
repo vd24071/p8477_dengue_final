@@ -68,7 +68,11 @@ param = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
           IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV,
           TLV = TLV)
 
-sim_basic = ode(y=state,times=times,func=SEIR_basic_no_fog,parms=param)
+sim_basic = ode(y=state,times=times,func=SEIR_basic,parms=param)
+
+tail(sim_basic[,"cumInci"], 1)
+
+
 
 #matplot(sim_basic[,'time'], sim_basic[,'IV'], type = 'l', lwd = 1, col = 'blue', lty = 1)
 matplot(sim_basic[,'time'], sim_basic[,'IH'], type = 'l', xlim = c(0,365), lwd = 1, col = 'red',
@@ -87,29 +91,18 @@ parms_no_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
 state_no_fog = c(SH = SH, EH = EH, IH = IH, RH = RH,
           SV = SV, EV = EV, IV = IV, cumInci = cumInci)
 
-times_no_fog=1;
-
-
 parms_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
               IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV,
               TLV = TLV)
 
-sim_no_fog = ode(y=state_no_fog,times=times_no_fog,func=SEIR_basic,parms=parms_no_fog);
-
-res[5,]=tail(sim[,'cumInci'],1) # get daily cases
 
 ts=seq(1,365,by=1)
 res=matrix(0,length(ts),1)
-prev=matrix()
 
-for (i in 2:length(ts)){
+for (i in 2:(length(ts)-1)){
   
   times_no_fog=seq(1,ts[i],by=1);
   times_fog=seq(ts[i],365,by=1);
-  
-  parms_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
-                IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV,
-                TLV = TLV)
   
   sim_no_fog = ode(y=state_no_fog,times=times_no_fog,func=SEIR_basic,parms=parms_no_fog);
 
@@ -122,20 +115,29 @@ for (i in 2:length(ts)){
   sim=rbind(sim_no_fog,sim_fog[-1,])
 
   # save the result before exiting the loop
-  res[i,]=tail(sim[,'cumInci'], 1) # get daily cases
+  res[i,]=tail(sim[,'cumInci'], 1) # get cumulative incidence
 }
 
 #day 1 fogging
-times_fog=seq(1,365,by=1);
+day_1_times_fog=seq(1,365,by=1);
 
+state_fog=c(SH=SH,EH=EH,IH=IH,
+            RH=RH,SV=0.4*SV,EV=0.4*EV,
+            IV=0.4*IV, cumInci=cumInci);
 
-#matplot(sim_basic[,'time'], sim_basic[,'IV'], type = 'l', lwd = 1, col = 'blue', lty = 1)
-matplot(sim_basic_fog[,'time'], sim_basic_fog[,'IH'], type = 'l', xlim = c(0,365), lwd = 1, col = 'red',
-        lty = 1, main = 'Human Infections of Dengue', cex.main = 1, ylab = 'Prevalence of Dengue', xlab = 'Time')
-legend('topright',cex=1,seg.len = 1,
-       legend=c('IH'),
-       lty=c(1,1),lwd=c(1,1),
-       col=c('red'),bty='n')
+day_1_sim_fog=ode(y=state_fog,times=day_1_times_fog,func=SEIR_basic,parms=parms_fog);
+
+res[1,]=tail(day_1_sim_fog[,'cumInci'],1) # get daily cases
+
+#day 365 fogging
+
+day_365_times_no_fog=seq(1,365,by=1);
+
+day_365_sim_no_fog = ode(y=state_no_fog,times=day_365_times_no_fog,func=SEIR_basic,parms=parms_no_fog);
+
+res[365,]=tail(day_365_sim_no_fog[,'cumInci'], 1)
+
+res
 
 ##################################################################
 
