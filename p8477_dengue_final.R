@@ -4,7 +4,7 @@ library(deSolve)
 
 # basic model, no insecticide use
 
-SEIR_basic_no_fog <- function(t, state, parameters) {
+SEIR_basic <- function(t, state, parameters) {
   with(as.list(c(state, parameters)), {
     
     # host population
@@ -49,7 +49,7 @@ IH = 0  # initial number of infections in humans
 RH = 0 # ???
 SH = NH - EH - IH - RH
 
-SV = 20000 # ratio of mosquitoes to humans
+SV = 20000 # initial number of susceptible mosquitoes
 EV = 0 # initial number of exposed in mosquitoes (0.5*SV)
 IV = 1 # initial number of infectious in mosquitoes 
 
@@ -75,67 +75,37 @@ legend('topright',cex=1,seg.len = 1,
 
 # basic model with insecticide use
 
-SEIR_basic_fog <- function(t, state, parameters) {
-  with(as.list(c(state, parameters)), {
-    
-    # beta = beta0 * (1 + b.term * Term[time])
-    
-    # host population
-    dSH = (NH/TLH) - (SH * (cVH * (IV/NH) + (1/TLH)))
-    dEH = (SH * cVH * (IV/NH)) - (EH * ((1/TIIT) + (1/TLH)))
-    dIH = (EH/TIIT) - (IH * ((1/TID) + (1/TLH)))
-    dRH = (IH/TID) - (RH/TLH)
-    
-    # vector population
-    
-    dSV = e - (SV * (cHV * ((IH + IH_visit)/NH) + (1/TLV)))
-    dEV = (SV * (cHV * ((IH + IH_visit)/NH))) - (EV * ((1/TEIT) + (1/TLV)))
-    dIV = (EV/TEIT) - (IV/TLV)
-    
-    list(c(dSH, dEH, dIH, dRH, dSV, dEV, dIV))
-    
-  })
-}
-
-
-# parameter values for simulations
-
-NH = 1e4    # host population
-TLH = 68.5*365 # host life span is 68.5 years or 600,060 hours or 25002.5 days
-TIIT = 5  # intrinsic incubation period is 5 days
-TEIT = 10   # extrinsic incubation period is 10 days
-MPP = 2    # Number of mosquitoes per person, MPP = 2 for simulation 1-3
-e = 5000    # emerging rate of adult mosquitoes, 5000 for simulation 1-3
-IH_visit = 0  # visiting infectious host
-TID = 3   # host infection duration is 3 days, AKA gamma
-cVH = 0.75  # effective contact rate, vector to host is 0.75/day
-cHV = 0.375   # effective contact rate, host to vector is 0.375/day
-
-# average TLV
-
-TLV = 4
-
-# initial states (not directly from paper)
-
-EH = 0  # initial number of exposed in humans 
-IH = 0  # initial number of infections in humans 
-RH = 0 # ???
-SH = NH - EH - IH - RH
-
-SV = 20000 # ratio of mosquitoes to humans
-EV = 0 # initial number of exposed in mosquitoes (0.5*SV)
-IV = 1 # initial number of infectious in mosquitoes 
-
-times=seq(1,365) # ???
-
-state = c(SH = SH, EH = EH, IH = IH, RH = RH,
+parms_no_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
+                  IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV,
+                  TLV = TLV)
+state_no_fog = c(SH = SH, EH = EH, IH = IH, RH = RH,
           SV = SV, EV = EV, IV = IV)
 
-param = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
-          IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV,
-          TLV = TLV)
 
-sim_basic_fog = ode(y=state,times=times,func=SEIR_basic_fog,parms=param)
+ts=seq(1,365,by=1)
+res=matrix(0,365,length(ts))
+for (i in 1:length(ts)){
+  
+  times_no_fog=seq(1,ts[i],by=1); # first wk weeks with out intervention
+  times_fog=seq(ts[i],365,by=1);
+  
+  parms_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
+                IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV,
+                TLV = TLV)
+  
+  sim_no_fog = ode(y=state_no_fog,times=times_no_fog,func=SEIR_basic,parms=parms_no_fog);
+  
+  state_fog=c(SH=tail(sim_basic[,'SH'],1),EH=tail(sim_basic[,'EH'],1),IH=tail(sim_basic[,'IH'],1),
+           RH=tail(sim_basic[,'RH'],1),SV=0.4*tail(sim_basic[,'SV'],1),EV=0.4*tail(sim_basic[,'EV'],1),
+           IV=0.4*tail(sim_basic[,'IV'],1));
+  
+  sim_fog=ode(y=state_fog,times=times_fog,func=SEIR_basic,parms=parms_fog);
+  sim=rbind(sim_no_fog,sim_fog[-1,])
+  
+  # save the result before exiting the loop
+  #res[,i]=sim_no_fog[seq(7,nrow(sim),by=7),'cumInci']-c(0,sim[seq(7,nrow(sim)-7,by=7),'cumInci']) # get weekly incidence
+}
+
 
 #matplot(sim_basic[,'time'], sim_basic[,'IV'], type = 'l', lwd = 1, col = 'blue', lty = 1)
 matplot(sim_basic_fog[,'time'], sim_basic_fog[,'IH'], type = 'l', xlim = c(0,365), lwd = 1, col = 'red',
@@ -145,7 +115,7 @@ legend('topright',cex=1,seg.len = 1,
        lty=c(1,1),lwd=c(1,1),
        col=c('red'),bty='n')
 
-
+##################################################################
 
 # model function for seasonality w/o insecticide use
 
