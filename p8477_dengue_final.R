@@ -54,7 +54,7 @@ RH = 0 # ???
 SH = NH - EH - IH - RH
 
 SV = 20000 # initial number of susceptible mosquitoes
-EV = 0 # initial number of exposed in mosquitoes (0.5*SV)
+EV = 0 # initial number of exposed in mosquitoes
 IV = 1 # initial number of infectious in mosquitoes 
 
 cumInci = 0 # initial cumulative incidence
@@ -87,8 +87,8 @@ parms_no_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
 state_no_fog = c(SH = SH, EH = EH, IH = IH, RH = RH,
           SV = SV, EV = EV, IV = IV, cumInci = cumInci)
 
-times_no_fog=seq(1,5,by=1);
-times_fog=seq(5,365,by=1);
+times_no_fog=1;
+
 
 parms_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
               IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV,
@@ -100,7 +100,9 @@ res[5,]=tail(sim[,'cumInci'],1) # get daily cases
 
 ts=seq(1,365,by=1)
 res=matrix(0,length(ts),1)
-for (i in 1:length(ts)){
+prev=matrix()
+
+for (i in 2:length(ts)){
   
   times_no_fog=seq(1,ts[i],by=1);
   times_fog=seq(ts[i],365,by=1);
@@ -123,6 +125,8 @@ for (i in 1:length(ts)){
   res[i,]=tail(sim[,'cumInci'], 1) # get daily cases
 }
 
+#day 1 fogging
+times_fog=seq(1,365,by=1);
 
 
 #matplot(sim_basic[,'time'], sim_basic[,'IV'], type = 'l', lwd = 1, col = 'blue', lty = 1)
