@@ -31,7 +31,7 @@ SEIR_basic <- function(t, state, parameters) {
 
 # parameter values for simulations
 
-NH = 1e4    # host population
+NH = 10000    # host population
 TLH = 68.5*365 # host life span is 68.5 years or 600,060 hours or 25002.5 days
 TIIT = 5  # intrinsic incubation period is 5 days
 TEIT = 10   # extrinsic incubation period is 10 days
@@ -46,12 +46,12 @@ cHV = 0.375   # effective contact rate, host to vector is 0.375/day
 
 TLV = 4
 
-# initial states (not directly from paper)
+# initial states (from N&R paper)
 
 EH = 0  # initial number of exposed in humans 
 IH = 0  # initial number of infections in humans 
-RH = 0 # ???
-SH = NH - EH - IH - RH
+RH = 0 # initial number of recovered in humans
+SH = NH - EH - IH - RH # initial number of suscepbile humans
 
 SV = 20000 # initial number of susceptible mosquitoes
 EV = 0 # initial number of exposed in mosquitoes
@@ -137,13 +137,13 @@ day_365_sim_no_fog = ode(y=state_no_fog,times=day_365_times_no_fog,func=SEIR_bas
 
 res[365,]=tail(day_365_sim_no_fog[,'cumInci'], 1)
 
-res
+min(res)
 
 ##################################################################
 
 # model function for seasonality w/o insecticide use
 
-SEIR_season_no_fog <- function(t, state, parameters) {
+SEIR_season <- function(t, state, parameters) {
   with(as.list(c(state, parameters)), {
     
     # real-time TLV based on season forcing (corrected) 
@@ -151,7 +151,7 @@ SEIR_season_no_fog <- function(t, state, parameters) {
     #TLV = TLV/correction.factor * (1 + b.term * Term[time])
     
     # real-time TLV based on seasonality forcing (uncorrected) 
-    TLV = TLV_avg + (TLV.term * Term[times])
+    TLV = seasonality[t]
     
     # host population
     dSH = (NH/TLH) - (SH * (cVH * (IV/NH) + (1/TLH)))
@@ -165,22 +165,20 @@ SEIR_season_no_fog <- function(t, state, parameters) {
     dEV = (SV * (cHV * ((IH + IH_visit)/NH))) - (EV * ((1/TEIT) + (1/TLV)))
     dIV = (EV/TEIT) - (IV/TLV)
     
-    list(c(dSH, dEH, dIH, dRH, dSV, dEV, dIV))
+    # cumulative incidence
+    
+    dcumInci = (1/TIIT) * EH
+    
+    list(c(dSH, dEH, dIH, dRH, dSV, dEV, dIV, dcumInci))
     
   })
 }
 
-## SETTING UP THE Season TERM-TIME FUNCTION:
+## SETTING UP THE Season TERM-TIME FUNCTION for 5 months:
 # term-time forcing
-wet_season=c(1:150);  # the days in a year of wet season
-times=seq(1,365); # in day for 100 years
-Term=rep(1,length(times));  # initialize a vector to store the Term
-ind=(1:length(Term) %% 365) %in% wet_season  # find those days that are in wet season
-Term[ind]=-1; # set them to -1
 
-ind[1]
-
-ind[160]
+seasonality = matrix(4,nrow=365,ncol=1)
+seasonality[(30*4):365] = 3
 
 # parameter values for simulations
 
@@ -196,6 +194,7 @@ TID = 3   # host infection duration is 3 days, AKA gamma
 cVH = 0.75  # effective contact rate, vector to host is 0.75/day
 cHV = 0.375   # effective contact rate, host to vector is 0.375/day
 
+TLV = 4
 TLV_avg = 3.5
 TLV.term = 0.5
 
@@ -218,15 +217,17 @@ SV = 20000 # ratio of mosquitoes to humans
 EV = 0 # initial number of exposed in mosquitoes (0.5*SV)
 IV = 1 # initial number of infectious in mosquitoes 
 
+cumInci = 0 # initial cumulative incidence
+
+times=seq(1,365) 
 
 state = c(SH = SH, EH = EH, IH = IH, RH = RH,
-          SV = SV, EV = EV, IV = IV)
+          SV = SV, EV = EV, IV = IV, cumInci = cumInci)
 
 param = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
-               IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV,
-               TLV = TLV)
+               IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV, TLV=TLV)
 
-sim_season = ode(y=state,times=times,func=SEIR_season_no_fog,parms=param)
+sim_season = ode(y=state,times=times,func=SEIR_season,parms=param)
 
 
 
