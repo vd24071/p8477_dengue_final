@@ -1,6 +1,7 @@
 #dengue final
 
 library(deSolve)
+library(vctrs)
 
 # basic model, no insecticide use
 
@@ -42,7 +43,7 @@ TID = 3   # host infection duration is 3 days, AKA gamma
 cVH = 0.75  # effective contact rate, vector to host is 0.75/day
 cHV = 0.375   # effective contact rate, host to vector is 0.375/day
 
-# average TLV
+# TLV
 
 TLV = 4
 
@@ -174,11 +175,20 @@ SEIR_season <- function(t, state, parameters) {
   })
 }
 
-## SETTING UP THE Season TERM-TIME FUNCTION for 5 months:
+## SETTING UP THE Season TERM-TIME FUNCTION for 4 months:
 # term-time forcing
 
+#run this for 4 months
 seasonality = matrix(4,nrow=365,ncol=1)
 seasonality[(30*4):365] = 3
+
+#run this for 5 months
+seasonality = matrix(4,nrow=365,ncol=1)
+seasonality[(30*5):365] = 3
+
+#run this for 6 months
+seasonality = matrix(4,nrow=365,ncol=1)
+seasonality[(30*6):365] = 3
 
 # parameter values for simulations
 
@@ -193,10 +203,6 @@ IH_visit = 0  # visiting infectious host
 TID = 3   # host infection duration is 3 days, AKA gamma
 cVH = 0.75  # effective contact rate, vector to host is 0.75/day
 cHV = 0.375   # effective contact rate, host to vector is 0.375/day
-
-TLV = 4
-TLV_avg = 3.5
-TLV.term = 0.5
 
 # run one of TLV for either wet or dry season
 
@@ -225,58 +231,95 @@ state = c(SH = SH, EH = EH, IH = IH, RH = RH,
           SV = SV, EV = EV, IV = IV, cumInci = cumInci)
 
 param = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
-               IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV, TLV=TLV)
+               IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV)
 
 sim_season = ode(y=state,times=times,func=SEIR_season,parms=param)
 
 
-
-# example attempts to plot model below
-
-matplot(sim_season[,'time'], sim_season[,'IH'], type = 'l', xlim = c(0,365), lwd = 1, col = 'red',
-        lty = 1, main = 'Human Infections of Dengue', cex.main = 1, ylab = 'Prevalence of Dengue', xlab = 'Time')
-legend('topright',cex=1,seg.len = 1,
-       legend='IH',
-       lty=c(1,1),lwd=c(1,1),
-       col='red',bty='n')
-
-matplot(sim_dry[,'time'], sim_dry[,c('SH','EH', 'IH')], type = 'l', xlim = c(0,100), lwd = 1, col = c('green', 'blue', 'red'),
-        lty = 1, main = 'Humans', cex.main = 1, ylab = 'Numbers', xlab = 'Time')
-legend('topright',cex=1,seg.len = 1,
-       legend=c('SH', 'EH', 'IH'),
-       lty=c(1,1),lwd=c(1,1),
-       col=c('green', 'blue','red'),bty='n')
+# seasonality with fogging
 
 
-matplot(sim_dry[,'time'], sim_dry[,c('SV','IV')], type = 'l', xlim = c(0,365), lwd = 1, col = c('blue', 'red'),
-        lty = 1, main = 'Mosquitoes', cex.main = 1, ylab = 'Numbers', xlab = 'Time')
-legend('topright',cex=1,seg.len = 1,
-       legend=c('SV','IV'),
-       lty=c(1,1),lwd=c(1,1),
-       col=c('blue','red'),bty='n')
+
+parms_no_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
+                 IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV)
+
+state_no_fog = c(SH = SH, EH = EH, IH = IH, RH = RH,
+                 SV = SV, EV = EV, IV = IV, cumInci = cumInci)
+
+parms_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
+              IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV)
 
 
-# wet season
+ts=seq(1,365,by=1)
+res=matrix(0,length(ts),1)
 
-param_wet = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
-              IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV,
-              TLV = TLV_wet)
+for (i in 2:(length(ts)-1)){
+  
+  times_no_fog=seq(1,ts[i],by=1);
+  times_fog=seq(ts[i],365,by=1);
+  
+  sim_season_no_fog = ode(y=state_no_fog,times=times_no_fog,func=SEIR_season,parms=parms_no_fog);
+  
+  state_season_fog=c(SH=tail(sim_season_no_fog[,'SH'],1),EH=tail(sim_season_no_fog[,'EH'],1),IH=tail(sim_season_no_fog[,'IH'],1),
+              RH=tail(sim_season_no_fog[,'RH'],1),SV=0.4*tail(sim_season_no_fog[,'SV'],1),EV=0.4*tail(sim_season_no_fog[,'EV'],1),
+              IV=0.4*tail(sim_season_no_fog[,'IV'],1), cumInci=tail(sim_season_no_fog[,'cumInci'],1));
+  
+  sim_season_fog=ode(y=state_season_fog,times=times_fog,func=SEIR_season,parms=parms_fog);
+  
+  sim_seas=rbind(sim_season_no_fog,sim_season_fog[-1,])
+  
+  # save the result before exiting the loop
+  res[i,]=tail(sim_seas[,'cumInci'], 1) # get cumulative incidence
+}
 
-sim_wet = ode(y=state,times=times,func=SEIR_vector,parms=param_wet)
+#day 1 fogging
+day_1_times_fog=seq(1,365,by=1);
 
-matplot(sim_wet[,'time'], sim_wet[,c('SH','EH', 'IH')], type = 'l', xlim = c(0,100), lwd = 1, col = c('green', 'blue', 'red'),
-        lty = 1, main = 'Humans', cex.main = 1, ylab = 'Numbers', xlab = 'Time')
-legend('topright',cex=1,seg.len = 1,
-       legend=c('SH','EH','IH'),
-       lty=c(1,1),lwd=c(1,1),
-       col=c('green','blue','red'),bty='n')
+state_fog=c(SH=SH,EH=EH,IH=IH,
+            RH=RH,SV=0.4*SV,EV=0.4*EV,
+            IV=0.4*IV, cumInci=cumInci);
 
-matplot(sim_wet[,'time'], sim_wet[,c('SV','IV')], type = 'l', xlim = c(0,365), lwd = 1, col = c('blue', 'red'),
-        lty = 1, main = 'Mosquitoes', cex.main = 1, ylab = 'Numbers', xlab = 'Time')
-legend('topright',cex=1,seg.len = 1,
-       legend=c('SV','IV'),
-       lty=c(1,1),lwd=c(1,1),
-       col=c('blue','red'),bty='n')
+day_1_sim_seas_fog=ode(y=state_fog,times=day_1_times_fog,func=SEIR_season,parms=parms_fog);
+
+res[1,]=tail(day_1_sim_seas_fog[,'cumInci'],1) # get daily cases
+
+#day 365 fogging
+
+day_365_times_no_fog=seq(1,365,by=1);
+
+day_365_sim_seas_no_fog = ode(y=state_no_fog,times=day_365_times_no_fog,func=SEIR_season,parms=parms_no_fog);
+
+res[365,]=tail(day_365_sim_seas_no_fog[,'cumInci'], 1)
 
 
-# need to simulate wet season for 5 months, then dry season for 7 months (rest of year)
+#simulation 3: seasonality + endemic state
+
+## SETTING UP THE Season TERM-TIME FUNCTION for 4 months:
+# term-time forcing
+
+#run this for 4 months
+seasonality = matrix(4,nrow=365,ncol=1)
+seasonality[(30*4):365] = 3
+
+#run this for 5 months
+seasonality = matrix(4,nrow=365,ncol=1)
+seasonality[(30*5):365] = 3
+
+#run this for 6 months
+seasonality = matrix(4,nrow=365,ncol=1)
+seasonality[(30*6):365] = 3
+
+#run this to repeat vector to 499 years
+
+seasonality_endem = vec_rep(seasonality, 499)
+
+times_endem=seq(1,365*499) 
+
+state = c(SH = SH, EH = EH, IH = IH, RH = RH,
+          SV = SV, EV = EV, IV = IV, cumInci = cumInci)
+
+param = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
+          IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV)
+
+sim_endem = ode(y=state,times=times_endem,func=SEIR_season,parms=param)
+
