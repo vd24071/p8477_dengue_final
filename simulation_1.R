@@ -3,7 +3,7 @@
 #load deSolve
 library(deSolve)
 
-# Simulation 1: basic model
+#function for basic SEIR model
 
 SEIR_basic <- function(t, state, parameters) {
   with(as.list(c(state, parameters)), {
@@ -29,6 +29,7 @@ SEIR_basic <- function(t, state, parameters) {
   })
 }
 
+
 # parameter values for simulations
 
 NH = 10000    # host population
@@ -41,6 +42,8 @@ IH_visit = 0  # visiting infectious host
 TID = 3   # host infection duration is 3 days, AKA gamma
 cVH = 0.75  # effective contact rate, vector to host is 0.75/day
 cHV = 0.375   # effective contact rate, host to vector is 0.375/day
+
+# TLV
 
 TLV = 4
 
@@ -57,7 +60,7 @@ IV = 1 # initial number of infectious in mosquitoes
 
 cumInci = 0 # initial cumulative incidence
 
-times=seq(1,365) # daily time step for 1 year
+times=seq(1,365) # daily time step
 
 state = c(SH = SH, EH = EH, IH = IH, RH = RH,
           SV = SV, EV = EV, IV = IV, cumInci = cumInci)
@@ -68,17 +71,10 @@ param = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
 
 sim_basic = ode(y=state,times=times,func=SEIR_basic,parms=param)
 
-tail(sim_basic[,"cumInci"], 1)
-
-matplot(sim_basic[,'time'], sim_basic[,'IH'], type = 'l', xlim = c(0,365), lwd = 1, col = 'red',
-        lty = 1, main = 'Human Infections of Dengue', cex.main = 1, ylab = 'Prevalence of Dengue', xlab = 'Time')
-legend('topright',cex=1,seg.len = 1,
-       legend=c('IH'),
-       lty=c(1,1),lwd=c(1,1),
-       col=c('red'),bty='n')
+tail(sim_basic[,'cumInci'], 1)
 
 
-# Simulation 1: basic model with fogging
+# basic model with insecticide use
 
 parms_no_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
                  IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV,
@@ -90,8 +86,12 @@ parms_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
               IH_visit = IH_visit, TID = TID, cVH = cVH, cHV = cHV,
               TLV = TLV)
 
+
 ts=seq(1,365,by=1)
-res=matrix(0,length(ts),1)
+res=matrix(0,length(ts),2)
+res[1:365,]=ts
+
+View(res)
 
 for (i in 2:(length(ts)-1)){
   
@@ -109,7 +109,7 @@ for (i in 2:(length(ts)-1)){
   sim=rbind(sim_no_fog,sim_fog[-1,])
   
   # save the result before exiting the loop
-  res[i,]=tail(sim[,'cumInci'], 1) # get cumulative incidence
+  res[i,2]=tail(sim[,'cumInci'], 1) # get cumulative incidence
 }
 
 #day 1 fogging
@@ -121,7 +121,7 @@ state_fog=c(SH=SH,EH=EH,IH=IH,
 
 day_1_sim_fog=ode(y=state_fog,times=day_1_times_fog,func=SEIR_basic,parms=parms_fog);
 
-res[1,]=tail(day_1_sim_fog[,'cumInci'],1) # get daily cases
+res[1,2]=tail(day_1_sim_fog[,'cumInci'],1) # get daily cases
 
 #day 365 fogging
 
@@ -129,8 +129,49 @@ day_365_times_no_fog=seq(1,365,by=1);
 
 day_365_sim_no_fog = ode(y=state_no_fog,times=day_365_times_no_fog,func=SEIR_basic,parms=parms_no_fog);
 
-res[365,]=tail(day_365_sim_no_fog[,'cumInci'], 1)
+res[365,2]=tail(day_365_sim_no_fog[,'cumInci'], 1)
 
-min(res)
+min(res[,2])
+res[which.min(res[,2])]
+
+View(res)
+
+
+########################################
+
+#Figure 1:
+
+#Figure 1a:
+# Day 169 fogging (optimal day)
+
+times_no_fog=seq(1,169,by=1);
+times_fog=seq(169,365,by=1);
+
+sim_no_fog = ode(y=state_no_fog,times=times_no_fog,func=SEIR_basic,parms=parms_no_fog);
+
+state_fog=c(SH=tail(sim_no_fog[,'SH'],1),EH=tail(sim_no_fog[,'EH'],1),IH=tail(sim_no_fog[,'IH'],1),
+            RH=tail(sim_no_fog[,'RH'],1),SV=0.4*tail(sim_no_fog[,'SV'],1),EV=0.4*tail(sim_no_fog[,'EV'],1),
+            IV=0.4*tail(sim_no_fog[,'IV'],1), cumInci=tail(sim_no_fog[,'cumInci'],1));
+
+sim_fog=ode(y=state_fog,times=times_fog,func=SEIR_basic,parms=parms_fog);
+
+sim_optimal=rbind(sim_no_fog,sim_fog[-1,])
+
+
+
+rect(par("usr")[1], par("usr")[3], par("usr")[2], par("usr")[4], col = "slategray1", border = NA)
+par(new = TRUE)
+
+plot(sim_basic[,'time'], sim_basic[,'IH'], type = 'l', lwd = 2, col = 'black',
+        lty = 1, main = 'Human Infections of Dengue', cex.main = 1, ylab = 'Prevalence of Dengue', xlab = 'Time', xaxs = 'i', xlim = c(0,365), ylim = c(0,275))
+lines(sim_optimal[,'time'], sim_optimal[,'IH'], type = 'l', lwd = 2, lty = 2, col = 'red')
+legend('topright',cex=1,seg.len = 2,
+       legend=c('No Fogging', 'Fogging on Day 169'),
+       lty=c(1,2),lwd=c(2,2),
+       col=c('black', 'red'),bty='n')
+legend('topleft', cex = 1.2,
+       legend = 'Wet Season',
+       bty = 'n')
+
 
 

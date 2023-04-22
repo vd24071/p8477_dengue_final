@@ -3,6 +3,7 @@
 library(deSolve)
 library(vctrs)
 
+
 # basic model, no insecticide use
 
 SEIR_basic <- function(t, state, parameters) {
@@ -60,7 +61,7 @@ IV = 1 # initial number of infectious in mosquitoes
 
 cumInci = 0 # initial cumulative incidence
 
-times=seq(1,365) # ???
+times=seq(1,365) # daily time step
 
 state = c(SH = SH, EH = EH, IH = IH, RH = RH,
           SV = SV, EV = EV, IV = IV, cumInci = cumInci)
@@ -98,7 +99,10 @@ parms_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
 
 
 ts=seq(1,365,by=1)
-res=matrix(0,length(ts),1)
+res=matrix(0,length(ts),2)
+res[1:365,]=ts
+
+View(res)
 
 for (i in 2:(length(ts)-1)){
   
@@ -116,7 +120,7 @@ for (i in 2:(length(ts)-1)){
   sim=rbind(sim_no_fog,sim_fog[-1,])
 
   # save the result before exiting the loop
-  res[i,]=tail(sim[,'cumInci'], 1) # get cumulative incidence
+  res[i,2]=tail(sim[,'cumInci'], 1) # get cumulative incidence
 }
 
 #day 1 fogging
@@ -128,7 +132,7 @@ state_fog=c(SH=SH,EH=EH,IH=IH,
 
 day_1_sim_fog=ode(y=state_fog,times=day_1_times_fog,func=SEIR_basic,parms=parms_fog);
 
-res[1,]=tail(day_1_sim_fog[,'cumInci'],1) # get daily cases
+res[1,2]=tail(day_1_sim_fog[,'cumInci'],1) # get daily cases
 
 #day 365 fogging
 
@@ -136,9 +140,10 @@ day_365_times_no_fog=seq(1,365,by=1);
 
 day_365_sim_no_fog = ode(y=state_no_fog,times=day_365_times_no_fog,func=SEIR_basic,parms=parms_no_fog);
 
-res[365,]=tail(day_365_sim_no_fog[,'cumInci'], 1)
+res[365,2]=tail(day_365_sim_no_fog[,'cumInci'], 1)
 
-min(res)
+min(res[,2])
+res[which.min(res[,2])]
 
 ##################################################################
 
