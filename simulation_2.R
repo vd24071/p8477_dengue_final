@@ -161,24 +161,23 @@ state_fog=c(SH=tail(sim_no_fog[,'SH'],1),EH=tail(sim_no_fog[,'EH'],1),IH=tail(si
 
 sim_fog=ode(y=state_fog,times=times_fog,func=SEIR_season,parms=parms_fog);
 
-sim_optimal=rbind(sim_no_fog,sim_fog[-1,])
+sim_optimal_seas=rbind(sim_no_fog,sim_fog[-1,])
 
  
-rect(0, par("usr")[3], 150, par("usr")[4], col = "slategray1", border = NA)
-par(new = TRUE)
 
 plot(sim_season[,'time'], sim_season[,'IH'], type = 'l',lwd = 2, col = 'black',
-     lty = 1, main = 'Human Infections of Dengue', cex.main = 1, ylab = 'Prevalence of Dengue', xlab = 'Time', xaxs = "i", xlim = c(0,365)) #  
-lines(sim_optimal[,'time'], sim_optimal[,'IH'], type = 'l', lwd = 2, lty = 2, col = 'red')
-legend('topright',cex=1,seg.len = 2,
+     lty = 1, cex.main = 1, ylab = 'Prevalence of Dengue', xlab = 'Time', xaxs = "i", xlim = c(0,365)) #  
+lines(sim_optimal_seas[,'time'], sim_optimal_seas[,'IH'], type = 'l', lwd = 2, lty = 2, col = 'red')
+legend('right',cex=1,seg.len = 2,
        legend=c('No Fogging', 'Fogging on Day 112'),
        lty=c(1,2),lwd=c(2,2),
        col=c('black', 'red'),bty='n')
 legend('topleft', cex = 1.2,
        legend = 'Wet Season',
        bty = 'n')
-legend('topleft', cex = 1.2,
+legend('topright', cex = 1.2,
        legend = 'Dry Season',
        bty = 'n')
 
-
+rect(0, par("usr")[3], 150, par("usr")[4], col = "slategray1", border = NA)
+par(new = TRUE)

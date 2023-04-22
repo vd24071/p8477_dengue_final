@@ -159,13 +159,10 @@ sim_optimal=rbind(sim_no_fog,sim_fog[-1,])
 
 
 
-rect(par("usr")[1], par("usr")[3], par("usr")[2], par("usr")[4], col = "slategray1", border = NA)
-par(new = TRUE)
-
 plot(sim_basic[,'time'], sim_basic[,'IH'], type = 'l', lwd = 2, col = 'black',
-        lty = 1, main = 'Human Infections of Dengue', cex.main = 1, ylab = 'Prevalence of Dengue', xlab = 'Time', xaxs = 'i', xlim = c(0,365), ylim = c(0,275))
+        lty = 1, cex.main = 1, ylab = 'Prevalence of Dengue', xlab = 'Time', xaxs = 'i', xlim = c(0,365), ylim = c(0,275))
 lines(sim_optimal[,'time'], sim_optimal[,'IH'], type = 'l', lwd = 2, lty = 2, col = 'red')
-legend('topright',cex=1,seg.len = 2,
+legend('right',cex=1,seg.len = 2,
        legend=c('No Fogging', 'Fogging on Day 169'),
        lty=c(1,2),lwd=c(2,2),
        col=c('black', 'red'),bty='n')
@@ -173,5 +170,6 @@ legend('topleft', cex = 1.2,
        legend = 'Wet Season',
        bty = 'n')
 
-
+rect(par("usr")[1], par("usr")[3], par("usr")[2], par("usr")[4], col = "slategray1", border = NA)
+par(new = TRUE)
 
