@@ -41,7 +41,7 @@ TID = 3   # host infection duration is 3 days, AKA gamma
 cVH = 0.75  # effective contact rate, vector to host is 0.75/day
 cHV = 0.375   # effective contact rate, host to vector is 0.375/day
 
-# initial states (not directly from paper)
+# initial states 
 
 EH = 0  # initial number of exposed in humans (0.5*SH)
 IH =  0 # initial number of infections in humans (0.25*EH)
@@ -84,9 +84,10 @@ sim_season = ode(y=state,times=times,func=SEIR_season,parms=param)
 
 tail(sim_season[,'cumInci'], 1)
 
+sim_season[which.max(sim_season[,'IH'])]
+
 
 # seasonality with fogging
-
 
 
 parms_no_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
@@ -165,17 +166,17 @@ sim_optimal_seas=rbind(sim_no_fog,sim_fog[-1,])
 
  
 
-plot(sim_season[,'time'], sim_season[,'IH'], type = 'l',lwd = 2, col = 'black',
-     lty = 1, cex.main = 1, ylab = 'Prevalence of Dengue', xlab = 'Time', xaxs = "i", xlim = c(0,365)) #  
-lines(sim_optimal_seas[,'time'], sim_optimal_seas[,'IH'], type = 'l', lwd = 2, lty = 2, col = 'red')
-legend('right',cex=1,seg.len = 2,
+plot(sim_season[,'time'], sim_season[,'IH'], type = 'l',lwd = 5, col = 'black',
+     lty = 1, cex.axis = 1.3, cex.lab = 1.3, ylab = 'Prevalence of Dengue', xlab = 'Days', xaxs = "i", xlim = c(0,365), ylim = c(0,300)) #  
+lines(sim_optimal_seas[,'time'], sim_optimal_seas[,'IH'], type = 'l', lwd = 5, lty = 3, col = 'red')
+legend('right',cex=1.1,seg.len = 2,
        legend=c('No Fogging', 'Fogging on Day 112'),
-       lty=c(1,2),lwd=c(2,2),
+       lty=c(1,3),lwd=c(5,5),
        col=c('black', 'red'),bty='n')
-legend('topleft', cex = 1.2,
+legend('topleft', cex = 1.4,
        legend = 'Wet Season',
        bty = 'n')
-legend('topright', cex = 1.2,
+legend('topright', cex = 1.4,
        legend = 'Dry Season',
        bty = 'n')
 

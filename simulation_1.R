@@ -73,6 +73,7 @@ sim_basic = ode(y=state,times=times,func=SEIR_basic,parms=param)
 
 tail(sim_basic[,'cumInci'], 1)
 
+sim_basic[which.max(sim_basic[,'IH'])]
 
 # basic model with insecticide use
 
@@ -90,8 +91,6 @@ parms_fog = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
 ts=seq(1,365,by=1)
 res=matrix(0,length(ts),2)
 res[1:365,]=ts
-
-View(res)
 
 for (i in 2:(length(ts)-1)){
   
@@ -159,14 +158,14 @@ sim_optimal=rbind(sim_no_fog,sim_fog[-1,])
 
 
 
-plot(sim_basic[,'time'], sim_basic[,'IH'], type = 'l', lwd = 2, col = 'black',
-        lty = 1, cex.main = 1, ylab = 'Prevalence of Dengue', xlab = 'Time', xaxs = 'i', xlim = c(0,365), ylim = c(0,275))
-lines(sim_optimal[,'time'], sim_optimal[,'IH'], type = 'l', lwd = 2, lty = 2, col = 'red')
-legend('right',cex=1,seg.len = 2,
+plot(sim_basic[,'time'], sim_basic[,'IH'], type = 'l', lwd = 5, col = 'black',
+        lty = 1, cex.axis = 1.3, cex.lab = 1.3, ylab = 'Prevalence of Dengue', xlab = 'Days', xaxs = 'i', xlim = c(0,365), ylim = c(0,300))
+lines(sim_optimal[,'time'], sim_optimal[,'IH'], type = 'l', lwd = 5, lty = 3, col = 'red')
+legend('right',cex=1.1,seg.len = 2,
        legend=c('No Fogging', 'Fogging on Day 169'),
-       lty=c(1,2),lwd=c(2,2),
+       lty=c(1,3),lwd=c(5,5),
        col=c('black', 'red'),bty='n')
-legend('topleft', cex = 1.2,
+legend('topleft', cex = 1.4,
        legend = 'Wet Season',
        bty = 'n')
 
