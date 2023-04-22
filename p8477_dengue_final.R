@@ -147,11 +147,8 @@ min(res)
 SEIR_season <- function(t, state, parameters) {
   with(as.list(c(state, parameters)), {
     
-    # real-time TLV based on season forcing (corrected) 
-    #correction.factor = (1/365*((1+b.term)*150+(1-b.term)*215))
-    #TLV = TLV/correction.factor * (1 + b.term * Term[time])
+    #pull from seasonality vector
     
-    # real-time TLV based on seasonality forcing (uncorrected) 
     TLV = seasonality[t]
     
     # host population
@@ -203,14 +200,6 @@ TID = 3   # host infection duration is 3 days, AKA gamma
 cVH = 0.75  # effective contact rate, vector to host is 0.75/day
 cHV = 0.375   # effective contact rate, host to vector is 0.375/day
 
-# run one of TLV for either wet or dry season
-
-# parameter value for wet season 
-#TLV_wet = 4   # vector life span is 4 days in wet season
-
-# parameter value for dry season
-#TLV_dry = 3   # vector life span is 3 days in dry season
-
 # initial states (not directly from paper)
 
 EH = 0  # initial number of exposed in humans (0.5*SH)
@@ -218,7 +207,7 @@ IH =  0 # initial number of infections in humans (0.25*EH)
 RH = 0 # ???
 SH = NH - EH - IH - RH
 
-SV = 20000 # ratio of mosquitoes to humans
+SV = 20000 # mosquitoes to humans
 EV = 0 # initial number of exposed in mosquitoes (0.5*SV)
 IV = 1 # initial number of infectious in mosquitoes 
 
@@ -356,7 +345,9 @@ param = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
 
 sim_endem = ode(y=state,times=times_endem,func=SEIR_endemic,parms=param)
 
+tail(sim_endem, 1)
 
+(tail(sim_endem[,'RH'],1)/NH)*100 #tail RH/NH *100
 
 
 # 500th year for month 4
@@ -420,7 +411,7 @@ SV = 14999.98 # ratio of mosquitoes to humans
 EV = 0.01334169 # initial number of exposed in mosquitoes 
 IV = 0.004160701 # initial number of infectious in mosquitoes 
 
-cumInci = 12013.012 # initial cumulative incidence
+cumInci = 0 # initial cumulative incidence
 
 times=seq(1,365) 
 
@@ -432,6 +423,7 @@ param = c(TLH = TLH, TIIT = TIIT, TEIT = TEIT, MPP = MPP, e = e,
 
 sim_500 = ode(y=state,times=times,func=SEIR_500,parms=param)
 
+max(sim_500[,'IH'])
 
 # sim 500 + fogging
 
