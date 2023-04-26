@@ -1,5 +1,8 @@
 # model function for seasonality 
 
+#load deSolve
+library(deSolve)
+
 SEIR_season <- function(t, state, parameters) {
   with(as.list(c(state, parameters)), {
     
